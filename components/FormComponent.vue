@@ -151,6 +151,7 @@
 
 <script>
 import vSelect from "vue-select";
+import "vue-select/dist/vue-select.css"
 import axios from "axios";
 export default {
   data() {
@@ -388,7 +389,6 @@ export default {
 </script>
 
 <style  scoped>
-@import url("vue-select/dist/vue-select.css");
 .select-style {
   font-weight: 800;
   --vs-search-input-color: #d20653;
