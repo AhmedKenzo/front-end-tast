@@ -56,7 +56,7 @@
                           :placeholder="'Select ' + prop.name"
                         ></v-select>
                         <div
-                          v-if="prop.option != null && prop.option.id == 'a'"
+                          v-if="prop.option != null && prop.option.id == 'other'"
                           class="mt-2"
                         >
                           <b-form-input
@@ -64,7 +64,7 @@
                             placeholder="Type something"
                           ></b-form-input>
                         </div>
-                        <div class="mt-2" v-if="prop.optionChilds.length > 0">
+                        <div class="mt-2" v-if="prop.optionChilds ">
                           <b-container fluid>
                             <b-row>
                               <b-col
@@ -82,6 +82,7 @@
                                   <div>
                                     <v-select
                                       class="select-style"
+                                      @input="searchOptionThirdChild(child , prop)"
                                       :options="child.options"
                                       v-model="child.option"
                                       :placeholder="'Select ' + child.name"
@@ -89,12 +90,52 @@
                                     <div
                                       v-if="
                                         child.option != null &&
-                                        child.option.id == 'a'
+                                        child.option.id == 'other'
                                       "
                                       class="mt-2"
                                     >
                                       <b-form-input
                                         v-model="child.other"
+                                        placeholder="Type something"
+                                      ></b-form-input>
+                                    </div>
+                                  </div>
+                                </b-form-group>
+                              </b-col>
+                            </b-row>
+                          </b-container>
+                        </div>
+                        <div class="mt-2" v-if="prop.optionThirdChilds">
+                          <b-container fluid>
+                            <b-row>
+                              <b-col
+                                sm="4"
+                                v-for="c in prop.optionThirdChilds"
+                                :key="c.id"
+                              >
+                                <b-form-group v-if="c.options.length > 0">
+                                  <template v-slot:label>
+                                    <h6>
+                                      <b>{{ c.name }}</b
+                                      ><i class="text-danger">*</i>
+                                    </h6>
+                                  </template>
+                                  <div>
+                                    <v-select
+                                      class="select-style"
+                                      :options="c.options"
+                                      v-model="c.option"
+                                      :placeholder="'Select ' + c.name"
+                                    ></v-select>
+                                    <div
+                                      v-if="
+                                        c.option != null &&
+                                        c.option.id == 'other'
+                                      "
+                                      class="mt-2"
+                                    >
+                                      <b-form-input
+                                        v-model="c.other"
                                         placeholder="Type something"
                                       ></b-form-input>
                                     </div>
@@ -110,7 +151,7 @@
                       <b-button
                         @click="submitForm"
                         style="
-                          background-color: #d20653;
+                          background-color: #d20653;   
                           color: white;
                           border: none;
                         "
@@ -204,13 +245,13 @@ export default {
       if (this.category) {
         this.subCategories = [];
         this.properties = [];
-        this.subCategory = "";
+        this.subCategory = null;
         this.subCategories = this.categories.find(
           (cat) => cat.id === this.category.id
         ).subCategories;
       } else {
         this.subCategories = [];
-        this.subCategory = "";
+        this.subCategory = null;
         this.properties = [];
       }
     },
@@ -237,12 +278,10 @@ export default {
                   label: option.name,
                 };
               });
-              if (options.length > 0) {
                 options.push({
-                  id: "a",
+                  id: "other",
                   label: "Other",
                 });
-              }
               return {
                 id: prop.id,
                 name: prop.name,
@@ -250,9 +289,11 @@ export default {
                 options: options,
                 other: prop.other_value,
                 isOther: false,
-                optionChilds: [],
+                optionChilds: '',
+                optionThirdChilds : '',
               };
             });
+            // console.log(this.properties)
             this.propertyLoading = false;
           })
           .catch((err) => {
@@ -265,7 +306,9 @@ export default {
     },
     searchPropChild(data) {
       if (data.option) {
-        if (data.option.id != "a") {
+        data.optionChilds = '';
+        data.optionThirdChilds = ''
+        if (data.option.id != "other") {
           axios
             .get(
               "https://staging.mazaady.com/api/v1/get-options-child/" +
@@ -286,12 +329,10 @@ export default {
                       label: option.name,
                     };
                   });
-                  if (options.length > 0) {
                     options.push({
-                      id: "a",
+                      id: "other",
                       label: "Other",
                     });
-                  }
                   return {
                     id: child.id,
                     name: child.name,
@@ -302,6 +343,7 @@ export default {
                   };
                 });
               }
+              console.log(data.optionChilds)
             })
             .catch((err)=>{
               console.log(err)
@@ -309,7 +351,57 @@ export default {
             })
         }
       } else {
-        data.optionChilds = [];
+        data.optionChilds = '';
+        data.optionThirdChilds = ''
+      }
+    },
+    searchOptionThirdChild(data , prop) {
+      if (data.option) {
+        prop.optionThirdChilds = '';
+        if (data.option.id != "other") {
+          axios
+            .get(
+              "https://staging.mazaady.com/api/v1/get-options-child/" +
+                data.option.id,
+              {
+                headers: {
+                  "private-key": "3%o8i}_;3D4bF]G5@22r2)Et1&mLJ4?$@+16",
+                },
+              }
+            )
+            .then((resp) => {
+              // console.log(resp.data.data)
+              if (resp.data.data.length > 0) {
+                prop.optionThirdChilds = resp.data.data.map((child) => {
+                  const options = child.options.map((option) => {
+                    return {
+                      id: option.id,
+                      label: option.name,
+                    };
+                  });
+                    options.push({
+                      id: "other",
+                      label: "Other",
+                    });
+                  return {
+                    id: child.id,
+                    name: child.name,
+                    option: child.value,
+                    options: options,
+                    other: child.other_value,
+                    isOther: false,
+                  };
+                });
+              }
+              console.log(prop.optionThirdChilds)
+            })
+            .catch((err)=>{
+              console.log(err)
+              alert('Something went wron')
+            })
+        } 
+      } else {
+        prop.optionThirdChilds ='';
       }
     },
     submitForm() {
@@ -339,34 +431,53 @@ export default {
       // Loop through each selected property and add it to the array
       this.properties.forEach((prop) => {
         if (prop.option) {
-          if (prop.option.id != "a") {
+          if (prop.option.id != "other") {
             selectedValues.push({
               id: prop.option.id,
               label: prop.option.label,
-              type: "Property",
+              type: prop.name,
             });
           } else {
             selectedValues.push({
               id: prop.option.id,
               label: prop.other,
-              type: "Other Property",
+              type: prop.name,
             });
           }
         }
         if (prop.optionChilds.length > 0) {
           prop.optionChilds.forEach((child) => {
             if (child.option) {
-              if (child.option.id != "a") {
+              if (child.option.id != "other") {
                 selectedValues.push({
                   id: child.option.id,
                   label: child.option.label,
-                  type: "child option",
+                  type: child.name,
                 });
               } else {
                 selectedValues.push({
                   id: child.option.id,
                   label: child.other,
-                  type: "Other option",
+                  type: child.name,
+                });
+              }
+            }
+          });
+        }
+        if (prop.optionThirdChilds.length > 0) {
+          prop.optionThirdChilds.forEach((child) => {
+            if (child.option) {
+              if (child.option.id != "other") {
+                selectedValues.push({
+                  id: child.option.id,
+                  label: child.option.label,
+                  type: child.name,
+                });
+              } else {
+                selectedValues.push({
+                  id: child.option.id,
+                  label: child.other,
+                  type: child.name,
                 });
               }
             }
